@@ -1,0 +1,1674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初党备考工具</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; background: #f5f5f5; color: #333; -webkit-font-smoothing: antialiased; }
+:root { --red: #c0392b; --red-dark: #96281b; --red-light: #e74c3c; --red-bg: #fdf2f2; --green: #27ae60; --green-bg: #eafaf1; --yellow: #f39c12; --gray: #999; --border: #e8e8e8; }
+
+/* === 框架 === */
+.app { display: flex; flex-direction: column; height: 100vh; }
+.header { background: var(--red); color: white; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0; }
+.header-left h1 { font-size: 18px; font-weight: bold; line-height: 1.2; }
+.header-left .subtitle { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+.header-stats { font-size: 12px; opacity: 0.9; }
+.header-stats span { margin-left: 12px; }
+
+.tabs { display: flex; background: var(--red-dark); flex-shrink: 0; overflow-x: auto; }
+.tab-btn { padding: 11px 20px; color: rgba(255,255,255,0.75); cursor: pointer; border: none; background: none; font-size: 14px; font-family: inherit; transition: all 0.2s; border-bottom: 3px solid transparent; white-space: nowrap; }
+.tab-btn:hover { color: white; background: rgba(255,255,255,0.1); }
+.tab-btn.active { color: white; border-bottom-color: white; background: rgba(255,255,255,0.15); }
+
+.tab-content { display: none; flex: 1; overflow: hidden; }
+.tab-content.active { display: flex; flex-direction: column; }
+
+/* === 通用 === */
+.loading { padding: 40px; text-align: center; color: #aaa; font-size: 14px; }
+.empty-hint { text-align: center; padding: 60px 20px; color: #bbb; font-size: 14px; }
+button { font-family: inherit; }
+.q-type-badge { display: inline-block; padding: 2px 7px; border-radius: 3px; font-size: 11px; font-weight: bold; flex-shrink: 0; line-height: 1.4; }
+.badge-single { background: #fef0f0; color: var(--red); }
+.badge-multi { background: #fef9e7; color: #d68910; }
+.badge-judge { background: var(--green-bg); color: var(--green); }
+.badge-fill { background: #e8f4fd; color: #2980b9; }
+.badge-multi_fill { background: #f3e8fd; color: #7d3c98; }
+.src-badge { font-size: 11px; padding: 1px 6px; border-radius: 3px; background: #f0f0f0; color: #777; margin-left: 6px; }
+
+/* === 过原文 tab === */
+.recite-layout { display: flex; flex: 1; overflow: hidden; }
+.recite-sidebar { width: 240px; background: white; border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; }
+.recite-sidebar h3 { padding: 9px 14px; background: var(--red-bg); color: var(--red); font-size: 13px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1; }
+.cat-label { padding: 7px 14px; font-size: 11px; font-weight: bold; color: #aaa; background: #fafafa; letter-spacing: 1px; }
+.article-item { padding: 9px 14px 9px 18px; cursor: pointer; font-size: 13px; border-bottom: 1px solid #f5f5f5; line-height: 1.4; transition: background 0.15s; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.article-item:hover { background: #fef5f5; }
+.article-item.active { background: var(--red-bg); color: var(--red); font-weight: bold; border-left: 3px solid var(--red); padding-left: 15px; }
+.article-item .item-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.article-item .item-count { background: #eee; color: #888; border-radius: 10px; padding: 1px 6px; font-size: 10px; flex-shrink: 0; }
+.article-item.active .item-count { background: var(--red); color: white; }
+
+.recite-main { flex: 1; overflow-y: auto; padding: 16px 24px; }
+.recite-toolbar { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.recite-toolbar h2 { font-size: 17px; color: #222; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tool-btn { padding: 5px 12px; font-size: 12px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer; }
+.tool-btn:hover { border-color: var(--red); color: var(--red); }
+.tool-btn.active { background: var(--red); color: white; border-color: var(--red); }
+
+.para-block { display: flex; gap: 10px; padding: 10px 12px; margin-bottom: 4px; border-radius: 4px; line-height: 1.85; font-size: 14.5px; transition: background 0.15s; }
+.para-block:hover { background: #fafafa; }
+.para-block.target { background: #fff8e1; animation: highlight 1.5s ease-out; }
+@keyframes highlight { 0% { background: #ffe082; } 100% { background: #fff8e1; } }
+.para-text { flex: 1; min-width: 0; }
+.para-text[contenteditable="true"] { outline: 1px dashed #ccc; outline-offset: 2px; padding: 2px; border-radius: 2px; }
+.para-text mark { background: #ffe082; padding: 0 2px; border-radius: 2px; }
+.para-text b { color: var(--red); }
+.para-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; min-width: 50px; }
+.q-dot { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 11px; font-size: 11px; font-weight: bold; cursor: pointer; user-select: none; padding: 0 6px; }
+.q-dot.has-q { background: var(--red); color: white; }
+.q-dot.has-q.done { background: var(--green); }
+.q-dot.no-q { background: #f0f0f0; color: #ccc; cursor: default; }
+.note-icon { font-size: 12px; color: #aaa; cursor: pointer; padding: 2px 4px; }
+.note-icon:hover { color: var(--red); }
+
+.para-questions { margin: 4px 0 12px 0; padding: 8px 12px; background: #fafafa; border-left: 3px solid var(--red); border-radius: 0 4px 4px 0; display: none; }
+.para-questions.open { display: block; }
+.para-q-item { padding: 7px 0; border-bottom: 1px dashed #eee; }
+.para-q-item:last-child { border-bottom: none; }
+.para-q-stem { display: flex; gap: 6px; align-items: flex-start; font-size: 13px; line-height: 1.6; }
+.para-q-answer { margin-top: 5px; padding: 5px 9px; background: var(--green-bg); color: var(--green); font-size: 12px; border-radius: 3px; display: none; }
+.para-q-answer.show { display: block; }
+.para-q-answer.no-answer { background: #fef9e7; color: var(--yellow); }
+.para-q-show-btn { font-size: 11px; color: var(--red); cursor: pointer; margin-left: 6px; user-select: none; }
+
+.note-block { margin: 4px 0 10px 32px; padding: 8px 12px; background: #fff8e1; border-left: 3px solid var(--yellow); font-size: 13px; line-height: 1.6; border-radius: 0 4px 4px 0; }
+.note-block textarea { width: 100%; border: none; background: transparent; resize: vertical; min-height: 40px; font-family: inherit; font-size: 13px; outline: none; }
+.note-block .note-actions { margin-top: 4px; display: flex; gap: 6px; }
+.note-block button { padding: 2px 8px; font-size: 11px; border: 1px solid #ddd; border-radius: 3px; background: white; cursor: pointer; }
+
+/* 编辑工具栏 */
+.edit-toolbar { padding: 8px 16px; background: #fffbf0; border-bottom: 1px solid #ffe082; display: none; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+.edit-toolbar.active { display: flex; }
+.fmt-btn { padding: 4px 10px; border: 1px solid #ddd; background: white; border-radius: 3px; cursor: pointer; font-size: 12px; }
+.fmt-btn:hover { background: #f0f0f0; }
+.edit-hint { color: #999; font-size: 11px; margin-left: auto; }
+
+/* === 题库 tab === */
+.bank-layout { display: flex; flex: 1; overflow: hidden; flex-direction: column; }
+.bank-toolbar { padding: 10px 16px; background: white; border-bottom: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
+.bank-toolbar select, .bank-toolbar input { padding: 5px 8px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px; font-family: inherit; }
+.bank-toolbar input { flex: 1; min-width: 140px; }
+.bank-stats { font-size: 12px; color: #888; margin-left: auto; }
+.bank-list { flex: 1; overflow-y: auto; padding: 12px; }
+.bank-item { background: white; border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; margin-bottom: 8px; }
+.bank-item.needs-answer { border-left: 4px solid var(--yellow); }
+.bank-item-head { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+.bank-item-id { font-size: 11px; color: #aaa; font-family: monospace; }
+.bank-item-stem { font-size: 14px; line-height: 1.7; color: #333; }
+.bank-item-options { margin-top: 6px; font-size: 13px; line-height: 1.8; color: #555; }
+.bank-item-options .opt-correct { color: var(--green); font-weight: bold; }
+.bank-item-answer { margin-top: 6px; padding: 6px 10px; background: var(--green-bg); color: var(--green); font-size: 13px; border-radius: 3px; }
+.bank-item-answer.empty { background: #fef9e7; color: var(--yellow); }
+.bank-item-explain { margin-top: 6px; padding: 6px 10px; background: #fafafa; font-size: 12px; line-height: 1.7; color: #666; border-radius: 3px; max-height: 4.4em; overflow: hidden; cursor: pointer; }
+.bank-item-explain.expanded { max-height: none; }
+.bank-item-actions { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px; }
+.bank-item-actions button { padding: 3px 10px; border: 1px solid #ddd; border-radius: 3px; background: white; cursor: pointer; font-size: 12px; }
+.bank-item-actions button:hover { border-color: var(--red); color: var(--red); }
+.bank-item-actions a { padding: 3px 10px; border: 1px solid #ddd; border-radius: 3px; background: white; cursor: pointer; font-size: 12px; text-decoration: none; color: #333; }
+.bank-item-actions a:hover { border-color: var(--red); color: var(--red); }
+.bank-edit-form { margin-top: 10px; padding: 10px; background: #fafafa; border-radius: 4px; border: 1px solid var(--border); }
+.bank-edit-form label { display: block; font-size: 12px; color: #666; margin-bottom: 3px; margin-top: 8px; font-weight: bold; }
+.bank-edit-form label:first-child { margin-top: 0; }
+.bank-edit-form input, .bank-edit-form textarea { width: 100%; padding: 5px 8px; font-size: 13px; border: 1px solid #ddd; border-radius: 3px; font-family: inherit; }
+.bank-edit-form textarea { resize: vertical; min-height: 50px; }
+.bank-edit-form .form-row { display: flex; gap: 10px; }
+.bank-edit-form .form-row > div { flex: 1; }
+
+/* === 错题本 tab === */
+.wrong-list { flex: 1; overflow-y: auto; padding: 14px; }
+.wrong-toolbar { padding: 10px 16px; background: white; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+.wrong-stats { font-size: 13px; color: #666; flex: 1; }
+.wrong-item { background: white; border: 1px solid var(--border); border-left: 4px solid var(--red); border-radius: 4px; padding: 12px 14px; margin-bottom: 10px; }
+.wrong-item-head { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; font-size: 12px; color: #888; }
+.wrong-item-stem { font-size: 14px; line-height: 1.7; }
+.wrong-item-meta { margin-top: 8px; font-size: 12px; color: #999; display: flex; gap: 14px; flex-wrap: wrap; }
+.wrong-item-meta .your-ans { color: var(--red); }
+.wrong-item-meta .correct-ans { color: var(--green); }
+.wrong-item-actions { margin-top: 8px; display: flex; gap: 8px; }
+.wrong-item-actions button { padding: 3px 10px; font-size: 12px; border: 1px solid #ddd; border-radius: 3px; background: white; cursor: pointer; }
+.wrong-item-actions button:hover { border-color: var(--red); color: var(--red); }
+
+/* === 模拟考试 tab === */
+.exam-setup { max-width: 600px; margin: 30px auto; background: white; border-radius: 10px; padding: 28px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.exam-setup h2 { color: var(--red); margin-bottom: 20px; font-size: 19px; }
+.setup-group { margin-bottom: 18px; }
+.setup-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #555; font-size: 14px; }
+.count-btns, .type-checks, .src-checks { display: flex; gap: 8px; flex-wrap: wrap; }
+.count-btn { padding: 7px 18px; border: 2px solid #ddd; border-radius: 5px; cursor: pointer; background: white; font-size: 13px; font-family: inherit; transition: all 0.2s; }
+.count-btn:hover { border-color: var(--red); color: var(--red); }
+.count-btn.active { border-color: var(--red); background: var(--red); color: white; }
+.type-check, .src-check { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; font-size: 13px; user-select: none; }
+.type-check:hover, .src-check:hover { border-color: var(--red); }
+.start-btn { width: 100%; padding: 11px; background: var(--red); color: white; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+.start-btn:hover { background: var(--red-dark); }
+
+.exam-area { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+.exam-header { padding: 9px 16px; background: white; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.exam-timer { font-size: 16px; font-weight: bold; color: var(--red); font-family: monospace; }
+.exam-progress-wrap { flex: 1; }
+.exam-progress-bar { height: 6px; background: #f0f0f0; border-radius: 3px; overflow: hidden; }
+.exam-progress-fill { height: 100%; background: var(--red); transition: width 0.3s; }
+.exam-progress-text { font-size: 11px; color: #888; margin-top: 3px; }
+.submit-exam-btn { padding: 7px 16px; background: var(--red); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
+
+.exam-questions { flex: 1; overflow-y: auto; padding: 16px; }
+.exam-q { background: white; border-radius: 6px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.exam-q-header { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 10px; line-height: 1.7; flex-wrap: wrap; }
+.exam-q-num { font-weight: bold; color: var(--red); }
+.exam-q-stem { font-size: 14.5px; flex: 1; min-width: 0; }
+.exam-options { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.exam-option { display: flex; align-items: flex-start; gap: 8px; padding: 7px 11px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; transition: all 0.15s; line-height: 1.6; font-size: 13.5px; }
+.exam-option:hover { border-color: var(--red); background: var(--red-bg); }
+.exam-option.selected { border-color: var(--red); background: var(--red-bg); color: var(--red); font-weight: bold; }
+.exam-option input { margin-top: 4px; flex-shrink: 0; }
+.judge-btns { display: flex; gap: 10px; margin-top: 8px; }
+.judge-btn { flex: 1; padding: 9px; border: 1px solid var(--border); border-radius: 4px; background: white; cursor: pointer; font-size: 14px; }
+.judge-btn:hover { border-color: var(--red); }
+.judge-btn.selected { background: var(--red); color: white; border-color: var(--red); }
+.fill-input { width: 100%; margin-top: 8px; padding: 7px 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; font-size: 13.5px; }
+.fill-hint { margin-top: 4px; font-size: 11px; color: #aaa; }
+
+.result-area { max-width: 800px; margin: 0 auto; padding: 20px; }
+.result-score-card { background: white; border-radius: 10px; padding: 24px; text-align: center; margin-bottom: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.result-score { font-size: 56px; font-weight: bold; color: var(--red); line-height: 1; }
+.result-score.pass { color: var(--green); }
+.result-label { font-size: 14px; color: #666; margin-top: 8px; }
+.result-stats { display: flex; justify-content: center; gap: 22px; margin-top: 16px; font-size: 13px; color: #777; flex-wrap: wrap; }
+.result-section h3 { font-size: 15px; color: #333; margin-bottom: 12px; }
+.review-q { background: white; border-radius: 6px; padding: 12px 14px; margin-bottom: 8px; }
+.review-q.correct { border-left: 4px solid var(--green); }
+.review-q.wrong { border-left: 4px solid var(--red); }
+.review-q.partial { border-left: 4px solid var(--yellow); }
+.review-q-stem { font-size: 14px; line-height: 1.7; margin-bottom: 6px; }
+.review-q-meta { font-size: 12px; color: #888; display: flex; gap: 14px; flex-wrap: wrap; margin-top: 4px; }
+.review-q-meta .your-ans.right { color: var(--green); }
+.review-q-meta .your-ans.wrong { color: var(--red); }
+.review-actions { display: flex; gap: 8px; margin-top: 6px; }
+.review-actions button { padding: 3px 10px; font-size: 12px; border: 1px solid #ddd; border-radius: 3px; background: white; cursor: pointer; }
+.result-back-btn { display: block; width: 100%; margin-top: 14px; padding: 9px; background: #888; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
+
+/* === 设置 tab === */
+.settings-wrap { max-width: 600px; margin: 24px auto; padding: 0 18px 24px; overflow-y: auto; }
+.settings-wrap h2 { color: var(--red); margin-bottom: 12px; font-size: 18px; }
+.settings-desc { font-size: 13px; color: #777; margin-bottom: 20px; line-height: 1.7; }
+.settings-field { margin-bottom: 14px; }
+.settings-field label { display: block; font-weight: bold; font-size: 13px; margin-bottom: 6px; color: #555; }
+.settings-field input { width: 100%; padding: 7px 10px; font-size: 13px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; }
+.field-hint { font-size: 11px; color: #999; margin-top: 4px; }
+.settings-save-btn { padding: 8px 22px; background: var(--red); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
+.settings-status { margin-top: 8px; font-size: 12px; color: var(--green); display: none; }
+.settings-status.show { display: block; }
+.settings-status.error { color: var(--red); }
+.danger-zone { margin-top: 24px; padding: 14px; border: 1px dashed #e74c3c; border-radius: 5px; background: #fef5f5; }
+.danger-zone h3 { color: var(--red); font-size: 14px; margin-bottom: 8px; }
+.danger-btn { padding: 5px 12px; font-size: 12px; border: 1px solid #e74c3c; border-radius: 3px; background: white; color: var(--red); cursor: pointer; margin-right: 8px; }
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .recite-sidebar { width: 180px; }
+  .recite-main { padding: 12px 14px; }
+  .header { padding: 8px 12px; }
+  .header-left h1 { font-size: 16px; }
+  .header-left .subtitle { display: none; }
+  .header-stats { display: none; }
+  .tab-btn { padding: 9px 14px; font-size: 13px; }
+  .bank-toolbar { padding: 8px 10px; }
+  .exam-setup { padding: 18px; margin: 14px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-left">
+      <h1>初党备考工具</h1>
+      <div class="subtitle">入党积极分子考试备考系统</div>
+    </div>
+    <div class="header-stats" id="header-stats">加载中...</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="recite" onclick="switchTab('recite')">过原文</button>
+    <button class="tab-btn" data-tab="bank" onclick="switchTab('bank')">题库</button>
+    <button class="tab-btn" data-tab="wrong" onclick="switchTab('wrong')">错题本 <span id="wrong-badge" style="display:none;background:white;color:var(--red);border-radius:9px;padding:1px 6px;font-size:11px;margin-left:4px;"></span></button>
+    <button class="tab-btn" data-tab="exam" onclick="switchTab('exam')">模拟考试</button>
+    <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">设置</button>
+  </div>
+
+  <!-- ===== 过原文 Tab ===== -->
+  <div id="tab-recite" class="tab-content active">
+    <div id="edit-toolbar" class="edit-toolbar">
+      <button class="fmt-btn" onclick="formatText('bold')"><b>加粗</b></button>
+      <button class="fmt-btn" onclick="formatText('highlight')">高亮</button>
+      <button class="fmt-btn" onclick="formatText('clear')">清除</button>
+      <span class="edit-hint">选中文字后点击;💬 图标加批注;退出编辑模式自动保存到本地</span>
+    </div>
+    <div class="recite-layout">
+      <div class="recite-sidebar">
+        <h3>篇目导航</h3>
+        <div id="article-nav"><div class="loading">加载中...</div></div>
+      </div>
+      <div class="recite-main" id="recite-main">
+        <div class="empty-hint">← 选择左侧篇目开始过原文</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 题库 Tab ===== -->
+  <div id="tab-bank" class="tab-content">
+    <div class="bank-toolbar">
+      <select id="bank-filter-source" onchange="renderBank()">
+        <option value="">所有来源</option>
+        <option value="sxy">sxy</option>
+        <option value="lxh党课题库">lxh</option>
+        <option value="二十大相关题库">二十大</option>
+      </select>
+      <select id="bank-filter-type" onchange="renderBank()">
+        <option value="">所有题型</option>
+        <option value="single">单选</option>
+        <option value="multi">多选</option>
+        <option value="judge">判断</option>
+        <option value="fill">填空</option>
+        <option value="multi_fill">组合填空</option>
+      </select>
+      <select id="bank-filter-status" onchange="renderBank()">
+        <option value="">所有状态</option>
+        <option value="needs_answer">缺答案</option>
+        <option value="supplementary">lxh 补充题</option>
+        <option value="needs_review">待复查</option>
+        <option value="edited">我编辑过的</option>
+      </select>
+      <input type="text" id="bank-search" placeholder="搜索题干 / 答案 / ID..." oninput="renderBank()">
+      <span class="bank-stats" id="bank-stats"></span>
+    </div>
+    <div class="bank-list" id="bank-list">
+      <div class="loading">加载中...</div>
+    </div>
+  </div>
+
+  <!-- ===== 错题本 Tab ===== -->
+  <div id="tab-wrong" class="tab-content">
+    <div class="wrong-toolbar">
+      <span class="wrong-stats" id="wrong-stats">错题本</span>
+      <button class="tool-btn" onclick="exportWrong()">导出</button>
+      <button class="tool-btn" onclick="clearWrong()">清空</button>
+    </div>
+    <div class="wrong-list" id="wrong-list">
+      <div class="empty-hint">还没有错题<br>模拟考试时答错的题会自动收集到这里</div>
+    </div>
+  </div>
+
+  <!-- ===== 模拟考试 Tab ===== -->
+  <div id="tab-exam" class="tab-content">
+    <div id="exam-setup-view" style="overflow-y:auto;flex:1;padding:14px;">
+      <div class="exam-setup">
+        <h2>模拟考试设置</h2>
+
+        <div class="setup-group">
+          <label>题目数量</label>
+          <div class="count-btns">
+            <button class="count-btn" data-count="20" onclick="selectCount(this,20)">20题</button>
+            <button class="count-btn active" data-count="40" onclick="selectCount(this,40)">40题</button>
+            <button class="count-btn" data-count="60" onclick="selectCount(this,60)">60题</button>
+            <button class="count-btn" data-count="100" onclick="selectCount(this,100)">100题</button>
+            <button class="count-btn" data-count="0" onclick="selectCount(this,0)">全部</button>
+          </div>
+        </div>
+
+        <div class="setup-group">
+          <label>题型选择</label>
+          <div class="type-checks">
+            <label class="type-check"><input type="checkbox" id="chk-single" checked> 单选</label>
+            <label class="type-check"><input type="checkbox" id="chk-multi" checked> 多选</label>
+            <label class="type-check"><input type="checkbox" id="chk-judge" checked> 判断</label>
+            <label class="type-check"><input type="checkbox" id="chk-fill"> 填空</label>
+            <label class="type-check"><input type="checkbox" id="chk-multi_fill"> 组合填空</label>
+          </div>
+        </div>
+
+        <div class="setup-group">
+          <label>题库来源</label>
+          <div class="src-checks">
+            <label class="src-check"><input type="checkbox" id="src-sxy" checked> sxy(179题)</label>
+            <label class="src-check"><input type="checkbox" id="src-lxh" checked> lxh(233题)</label>
+            <label class="src-check"><input type="checkbox" id="src-sd" checked> 二十大(40题)</label>
+          </div>
+        </div>
+
+        <div class="setup-group">
+          <label>其他选项</label>
+          <div class="src-checks">
+            <label class="src-check"><input type="checkbox" id="opt-skip-noanswer" checked> 跳过无答案的题</label>
+            <label class="src-check"><input type="checkbox" id="opt-only-wrong"> 只考错题本里的题</label>
+          </div>
+        </div>
+
+        <button class="start-btn" onclick="startExam()">开始考试</button>
+      </div>
+    </div>
+
+    <div id="exam-area-view" class="exam-area" style="display:none;">
+      <div class="exam-header">
+        <div class="exam-timer" id="exam-timer">00:00</div>
+        <div class="exam-progress-wrap">
+          <div class="exam-progress-bar"><div class="exam-progress-fill" id="exam-progress-fill" style="width:0%"></div></div>
+          <div class="exam-progress-text" id="exam-progress-text">已答 0 / 0 题</div>
+        </div>
+        <button class="submit-exam-btn" onclick="submitExam()">交卷</button>
+      </div>
+      <div class="exam-questions" id="exam-questions"></div>
+    </div>
+
+    <div id="exam-result-view" style="display:none;overflow-y:auto;flex:1;">
+      <div class="result-area" id="result-area"></div>
+    </div>
+  </div>
+
+  <!-- ===== 设置 Tab ===== -->
+  <div id="tab-settings" class="tab-content" style="overflow-y:auto;">
+    <div class="settings-wrap">
+      <h2>GitHub 同步设置</h2>
+      <p class="settings-desc">题库编辑(改答案、补答案、加解析)只会先存在浏览器本地。在这里配置 GitHub 后,点"上传题库到 GitHub"可以把改动写入 questions.json,这样换设备也能看到。</p>
+
+      <div class="settings-field">
+        <label>GitHub Personal Access Token</label>
+        <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx">
+        <div class="field-hint">需要 repo 权限。GitHub → Settings → Developer settings → Personal access tokens 创建。</div>
+      </div>
+      <div class="settings-field">
+        <label>仓库(owner/repo)</label>
+        <input type="text" id="gh-repo" placeholder="yourname/chudang-study">
+      </div>
+      <div class="settings-field">
+        <label>questions.json 路径</label>
+        <input type="text" id="gh-path-q" placeholder="questions.json" value="questions.json">
+      </div>
+
+      <button class="settings-save-btn" onclick="saveGhSettings()">保存设置</button>
+      <button class="settings-save-btn" style="margin-left:8px;background:var(--green);" onclick="uploadQuestionsToGitHub()">上传题库到 GitHub</button>
+      <div class="settings-status" id="settings-status"></div>
+
+      <div class="danger-zone">
+        <h3>本地数据管理</h3>
+        <p style="font-size:12px;color:#888;margin-bottom:8px;">所有本地编辑、批注、错题、做题记录均存于浏览器。导出可备份,清空会全部删除。</p>
+        <button class="danger-btn" onclick="exportLocalData()">导出本地数据</button>
+        <button class="danger-btn" onclick="importLocalData()">导入本地数据</button>
+        <button class="danger-btn" onclick="clearLocalData()" style="background:var(--red);color:white;">清空本地数据</button>
+        <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleImportFile(event)">
+      </div>
+
+      <div style="margin-top:24px;font-size:12px;color:#aaa;line-height:1.7;">
+        <div><b>部署提示</b></div>
+        <div>· 把 index.html、articles.json、questions.json 放在同一目录</div>
+        <div>· 上传到 GitHub 仓库根目录,在 Settings → Pages 启用 Pages</div>
+        <div>· 也可以在本地双击 index.html 打开使用(但 GitHub 同步只在网络访问时可用)</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+// ============== 全局状态 ==============
+let ARTICLES = null;          // articles.json 原数据
+let QUESTIONS = null;          // questions.json 原数据
+let ORIGINAL_Q = {};           // qid -> 原始题目 (用于撤销编辑)
+let articleMap = {};           // id -> article
+let paragraphMap = {};         // para_id -> {paragraph, article}
+let questionMap = {};          // q_id -> question
+let paraToQs = {};             // para_id -> [q_id, q_id, ...]
+
+// 本地存储(localStorage)
+const LS = {
+  // 用户对题库的编辑: { qid: {field: newValue} }
+  edits: 'cd_q_edits',
+  // 已考次数(跟原文段落红绿点关联): {q_id: {answered: n, correct: n}}
+  qStats: 'cd_q_stats',
+  // 错题本: [{qid, userAns, time}, ...]
+  wrong: 'cd_wrong',
+  // 原文批注: {para_id: {html: 富文本html, note: '批注文字'}}
+  annotations: 'cd_annotations',
+  // 编辑模式
+  editMode: 'cd_edit_mode',
+  // 当前文章
+  currentArticle: 'cd_current_article',
+  // GitHub
+  ghToken: 'gh_token',
+  ghRepo: 'gh_repo',
+  ghPathQ: 'gh_path_q'
+};
+
+function getLS(key, fallback = null) {
+  try {
+    const v = localStorage.getItem(key);
+    if (v === null) return fallback;
+    return JSON.parse(v);
+  } catch { return fallback; }
+}
+function setLS(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+}
+
+function escHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ============== 启动 ==============
+async function init() {
+  try {
+    const [aRes, qRes] = await Promise.all([
+      fetch('articles.json'),
+      fetch('questions.json')
+    ]);
+    if (!aRes.ok || !qRes.ok) throw new Error('JSON 加载失败');
+    ARTICLES = await aRes.json();
+    QUESTIONS = await qRes.json();
+  } catch (e) {
+    document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#c0392b;font-family:sans-serif;">' +
+      '<h2>数据加载失败</h2><p style="margin-top:12px;color:#666;">请确认 articles.json 和 questions.json 与 index.html 在同一目录。</p>' +
+      '<p style="margin-top:8px;color:#999;font-size:13px;">' + escHtml(e.message) + '</p></div>';
+    return;
+  }
+
+  buildIndexes();
+  applyEdits();
+  renderHeaderStats();
+  renderArticleNav();
+  renderBank();
+  renderWrongList();
+  loadGhSettings();
+  updateWrongBadge();
+
+  // 恢复上次打开的篇目
+  const last = getLS(LS.currentArticle);
+  if (last && articleMap[last]) {
+    selectArticle(last);
+  }
+}
+
+function buildIndexes() {
+  for (const art of ARTICLES.articles) {
+    articleMap[art.id] = art;
+    for (const p of art.paragraphs) {
+      paragraphMap[p.id] = { paragraph: p, article: art };
+    }
+  }
+  for (const q of QUESTIONS.questions) {
+    questionMap[q.id] = q;
+    ORIGINAL_Q[q.id] = JSON.parse(JSON.stringify(q));  // 深拷贝原始版本用于撤销
+    const sp = q.source_para;
+    if (sp) {
+      if (!paraToQs[sp]) paraToQs[sp] = [];
+      paraToQs[sp].push(q.id);
+    }
+  }
+}
+
+// 把本地编辑应用到 questionMap 上(不污染原 questions.json 数据本身, 但供 UI 读取)
+function applyEdits() {
+  const edits = getLS(LS.edits, {});
+  for (const [qid, fields] of Object.entries(edits)) {
+    if (!questionMap[qid]) continue;
+    Object.assign(questionMap[qid], fields);
+  }
+}
+
+function renderHeaderStats() {
+  const total = QUESTIONS.questions.length;
+  const noAns = QUESTIONS.questions.filter(q => !hasAnswer(q)).length;
+  const wrong = (getLS(LS.wrong, [])).length;
+  document.getElementById('header-stats').innerHTML =
+    `<span>共 ${total} 题</span>` +
+    (noAns > 0 ? `<span style="color:#ffe082;">缺答案 ${noAns}</span>` : '') +
+    (wrong > 0 ? `<span style="color:#ffcdd2;">错题 ${wrong}</span>` : '');
+}
+
+function hasAnswer(q) {
+  if (q.type === 'fill' || q.type === 'multi_fill') return !!(q.answer_text && q.answer_text.trim());
+  return !!(q.answer && q.answer.trim());
+}
+
+// ============== Tab 切换 ==============
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + name));
+}
+
+// ============== 过原文 tab ==============
+let currentArticleId = null;
+let editMode = false;
+
+function renderArticleNav() {
+  const nav = document.getElementById('article-nav');
+  const bidu = ARTICLES.articles.filter(a => a.category === 'bidu');
+  const jiangyi = ARTICLES.articles.filter(a => a.category === 'jiangyi');
+
+  let html = '';
+  if (bidu.length) {
+    html += '<div class="cat-label">必读篇目 (' + bidu.length + ')</div>';
+    for (const a of bidu) html += renderArticleNavItem(a);
+  }
+  if (jiangyi.length) {
+    html += '<div class="cat-label">专题讲义 (' + jiangyi.length + ')</div>';
+    for (const a of jiangyi) html += renderArticleNavItem(a);
+  }
+  nav.innerHTML = html;
+}
+
+function renderArticleNavItem(a) {
+  // 计算这个文章下挂了多少题
+  let qCount = 0;
+  for (const p of a.paragraphs) {
+    qCount += (paraToQs[p.id] || []).length;
+  }
+  const cls = currentArticleId === a.id ? 'article-item active' : 'article-item';
+  const title = (a.title || '').replace(/^[《\s]+|[》\s]+$/g, '');
+  return `<div class="${cls}" onclick="selectArticle('${a.id}')">
+    <span class="item-title" title="${escHtml(a.title)}">${escHtml(title)}</span>
+    ${qCount > 0 ? `<span class="item-count">${qCount}</span>` : ''}
+  </div>`;
+}
+
+function selectArticle(id) {
+  currentArticleId = id;
+  setLS(LS.currentArticle, id);
+  renderArticleNav();
+  renderArticleBody();
+}
+
+function renderArticleBody() {
+  const art = articleMap[currentArticleId];
+  if (!art) return;
+  const main = document.getElementById('recite-main');
+  const annotations = getLS(LS.annotations, {});
+
+  let html = `<div class="recite-toolbar">
+    <h2>${escHtml(art.title)}</h2>
+    <span style="font-size:12px;color:#999;">${art.paragraph_count}段 · ${art.total_chars}字</span>
+    <button class="tool-btn ${editMode ? 'active' : ''}" onclick="toggleEditMode()">${editMode ? '✓ 退出编辑' : '✏️ 编辑'}</button>
+  </div>`;
+
+  for (const p of art.paragraphs) {
+    if (p.type === 'meta' || !p.text) continue;
+    const qIds = paraToQs[p.id] || [];
+    const qCount = qIds.length;
+    const ann = annotations[p.id] || {};
+    const text = ann.html || escHtml(p.text);
+
+    // 已考标记: 这段挂的题里, 用户答对过的比例
+    const stats = computeParaProgress(qIds);
+    let dotClass = 'no-q', dotText = '·';
+    if (qCount > 0) {
+      dotClass = stats.allDone ? 'has-q done' : 'has-q';
+      dotText = qCount;
+    }
+
+    html += `<div class="para-block" id="para-${p.id}">
+      <div class="para-text" data-para="${p.id}" ${editMode ? 'contenteditable="true"' : ''}>${text}</div>
+      <div class="para-meta">
+        <span class="q-dot ${dotClass}" onclick="toggleParaQs('${p.id}')" title="${qCount > 0 ? '点击查看真题(' + stats.done + '/' + qCount + ' 已会)' : '此段无关联真题'}">${dotText}</span>
+        <span class="note-icon" onclick="toggleNote('${p.id}')" title="批注">💬${ann.note ? '·' : ''}</span>
+      </div>
+    </div>`;
+
+    // 题目折叠区
+    html += `<div class="para-questions" id="paraq-${p.id}"></div>`;
+    // 批注区
+    if (ann.note) {
+      html += renderNoteBlock(p.id, ann.note);
+    }
+  }
+
+  main.innerHTML = html;
+  document.getElementById('edit-toolbar').classList.toggle('active', editMode);
+}
+
+function computeParaProgress(qIds) {
+  const stats = getLS(LS.qStats, {});
+  let done = 0;
+  for (const qid of qIds) {
+    const s = stats[qid];
+    if (s && s.correct > 0) done++;
+  }
+  return { done, total: qIds.length, allDone: qIds.length > 0 && done === qIds.length };
+}
+
+function toggleParaQs(paraId) {
+  const box = document.getElementById('paraq-' + paraId);
+  if (!box) return;
+  if (box.classList.contains('open')) {
+    box.classList.remove('open');
+    return;
+  }
+  // 渲染挂在这一段的题
+  const qIds = paraToQs[paraId] || [];
+  if (!qIds.length) {
+    box.innerHTML = '<div style="color:#aaa;font-size:12px;">该段未挂关联题目</div>';
+    box.classList.add('open');
+    return;
+  }
+  let html = '';
+  for (const qid of qIds) {
+    const q = questionMap[qid];
+    if (!q) continue;
+    html += renderParaQItem(q);
+  }
+  box.innerHTML = html;
+  box.classList.add('open');
+}
+
+function renderParaQItem(q) {
+  const typeName = { single: '单选', multi: '多选', judge: '判断', fill: '填空', multi_fill: '组合填空' }[q.type] || q.type;
+  const ans = formatAnswer(q);
+  const noAns = !hasAnswer(q);
+  return `<div class="para-q-item">
+    <div class="para-q-stem">
+      <span class="q-type-badge badge-${q.type}">${typeName}</span>
+      <span style="flex:1;">${escHtml(q.stem)}</span>
+      <span class="para-q-show-btn" onclick="toggleParaQAns(this)">显示答案 ▾</span>
+    </div>
+    <div class="para-q-answer ${noAns ? 'no-answer' : ''}">${noAns ? '⚠ 无答案 - 在题库 tab 编辑' : '答案:' + escHtml(ans)}</div>
+  </div>`;
+}
+
+function toggleParaQAns(el) {
+  const ans = el.parentElement.parentElement.querySelector('.para-q-answer');
+  ans.classList.toggle('show');
+  el.textContent = ans.classList.contains('show') ? '隐藏答案 ▴' : '显示答案 ▾';
+}
+
+function formatAnswer(q) {
+  if (q.type === 'fill' || q.type === 'multi_fill') {
+    return q.answer_text || '';
+  }
+  if (q.type === 'judge') {
+    if (q.answer === 'A') return '正确';
+    if (q.answer === 'B') return '错误';
+    return q.answer || '';
+  }
+  // single / multi: A / ABCD + 选项文本
+  if (!q.answer) return '';
+  const keys = q.answer.split('');
+  const parts = [];
+  for (const k of keys) {
+    const opt = (q.options || []).find(o => o.key === k);
+    if (opt) parts.push(`${k}.${opt.text}`);
+    else parts.push(k);
+  }
+  return parts.join(' / ');
+}
+
+// ============== 编辑模式 / 批注 ==============
+function toggleEditMode() {
+  // 切换前先保存
+  if (editMode) saveAnnotations();
+  editMode = !editMode;
+  setLS(LS.editMode, editMode);
+  renderArticleBody();
+}
+
+function saveAnnotations() {
+  const annotations = getLS(LS.annotations, {});
+  document.querySelectorAll('.para-text[contenteditable="true"]').forEach(el => {
+    const pid = el.dataset.para;
+    const html = el.innerHTML.trim();
+    const orig = paragraphMap[pid] && escHtml(paragraphMap[pid].paragraph.text);
+    if (html && html !== orig) {
+      annotations[pid] = annotations[pid] || {};
+      annotations[pid].html = html;
+    } else if (annotations[pid]) {
+      delete annotations[pid].html;
+      if (!annotations[pid].note) delete annotations[pid];
+    }
+  });
+  setLS(LS.annotations, annotations);
+}
+
+function formatText(action) {
+  if (action === 'bold') document.execCommand('bold');
+  else if (action === 'highlight') {
+    // 用 mark 标签包起来
+    const sel = window.getSelection();
+    if (!sel.rangeCount || sel.toString().trim() === '') return;
+    const range = sel.getRangeAt(0);
+    const mark = document.createElement('mark');
+    try {
+      range.surroundContents(mark);
+    } catch {
+      // 跨节点选区 fallback
+      const frag = range.extractContents();
+      mark.appendChild(frag);
+      range.insertNode(mark);
+    }
+    sel.removeAllRanges();
+  } else if (action === 'clear') {
+    document.execCommand('removeFormat');
+  }
+}
+
+function toggleNote(paraId) {
+  const annotations = getLS(LS.annotations, {});
+  const ann = annotations[paraId] || {};
+  // 如果已经有 note 块, 先移除
+  let existing = document.querySelector(`[data-note-for="${paraId}"]`);
+  if (existing) {
+    existing.remove();
+    return;
+  }
+  // 在段落后面插入编辑框
+  const para = document.getElementById('para-' + paraId);
+  if (!para) return;
+  const html = `<div class="note-block" data-note-for="${paraId}">
+    <textarea placeholder="在此输入批注...">${escHtml(ann.note || '')}</textarea>
+    <div class="note-actions">
+      <button onclick="saveNote('${paraId}', this)">保存</button>
+      <button onclick="deleteNote('${paraId}', this)">删除</button>
+      <button onclick="this.closest('.note-block').remove()">取消</button>
+    </div>
+  </div>`;
+  // 插入到 para 之后(可能后面有 paraq-xxx, 所以插到 paraq 后面)
+  const paraq = document.getElementById('paraq-' + paraId);
+  const anchor = paraq || para;
+  anchor.insertAdjacentHTML('afterend', html);
+  const ta = document.querySelector(`[data-note-for="${paraId}"] textarea`);
+  if (ta) ta.focus();
+}
+
+function saveNote(paraId, btn) {
+  const block = btn.closest('.note-block');
+  const text = block.querySelector('textarea').value.trim();
+  const annotations = getLS(LS.annotations, {});
+  if (text) {
+    annotations[paraId] = annotations[paraId] || {};
+    annotations[paraId].note = text;
+  } else if (annotations[paraId]) {
+    delete annotations[paraId].note;
+    if (!annotations[paraId].html) delete annotations[paraId];
+  }
+  setLS(LS.annotations, annotations);
+  // 重渲染
+  renderArticleBody();
+}
+
+function deleteNote(paraId, btn) {
+  const annotations = getLS(LS.annotations, {});
+  if (annotations[paraId]) {
+    delete annotations[paraId].note;
+    if (!annotations[paraId].html) delete annotations[paraId];
+    setLS(LS.annotations, annotations);
+  }
+  renderArticleBody();
+}
+
+function renderNoteBlock(paraId, noteText) {
+  return `<div class="note-block" data-note-display="${paraId}">
+    <div style="font-weight:bold;color:var(--yellow);font-size:12px;margin-bottom:4px;">💬 批注</div>
+    <div>${escHtml(noteText)}</div>
+    <div class="note-actions">
+      <button onclick="toggleNote('${paraId}')">编辑</button>
+    </div>
+  </div>`;
+}
+
+// 跳到指定段落 (从错题本/题库点击使用)
+function jumpToPara(paraId) {
+  if (!paraId || !paragraphMap[paraId]) {
+    alert('未找到对应原文段落');
+    return;
+  }
+  const articleId = paragraphMap[paraId].article.id;
+  switchTab('recite');
+  if (currentArticleId !== articleId) {
+    selectArticle(articleId);
+  }
+  // 等渲染完成
+  setTimeout(() => {
+    const el = document.getElementById('para-' + paraId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('target');
+      setTimeout(() => el.classList.remove('target'), 1800);
+    }
+  }, 100);
+}
+</script>
+<script>
+// ============== 题库 tab ==============
+function renderBank() {
+  const list = document.getElementById('bank-list');
+  if (!QUESTIONS) return;
+
+  const fSrc = document.getElementById('bank-filter-source').value;
+  const fType = document.getElementById('bank-filter-type').value;
+  const fStatus = document.getElementById('bank-filter-status').value;
+  const search = document.getElementById('bank-search').value.trim().toLowerCase();
+  const edits = getLS(LS.edits, {});
+
+  let items = QUESTIONS.questions.filter(q => {
+    if (fSrc && q.source_doc !== fSrc) return false;
+    if (fType && q.type !== fType) return false;
+    if (fStatus === 'needs_answer' && hasAnswer(q)) return false;
+    if (fStatus === 'supplementary' && !q.is_supplementary) return false;
+    if (fStatus === 'needs_review' && !q.needs_review) return false;
+    if (fStatus === 'edited' && !edits[q.id]) return false;
+    if (search) {
+      const blob = (q.id + ' ' + q.stem + ' ' + (q.answer || '') + ' ' + (q.answer_text || '') +
+                    (q.options || []).map(o => o.key + o.text).join(' ')).toLowerCase();
+      if (!blob.includes(search)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('bank-stats').textContent = `${items.length} / ${QUESTIONS.questions.length} 题`;
+
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-hint">没有匹配的题目</div>';
+    return;
+  }
+
+  // 性能:限制 200 题渲染
+  const limit = 200;
+  let html = '';
+  for (const q of items.slice(0, limit)) {
+    html += renderBankItem(q, !!edits[q.id]);
+  }
+  if (items.length > limit) {
+    html += `<div style="text-align:center;padding:14px;color:#999;font-size:12px;">显示前 ${limit} 题,使用筛选器缩小范围以查看更多</div>`;
+  }
+  list.innerHTML = html;
+}
+
+function renderBankItem(q, isEdited) {
+  const typeName = { single: '单选', multi: '多选', judge: '判断', fill: '填空', multi_fill: '组合填空' }[q.type] || q.type;
+  const noAns = !hasAnswer(q);
+  const srcMap = { 'sxy': 'sxy', 'lxh党课题库': 'lxh', '二十大相关题库': '二十大' };
+  const src = srcMap[q.source_doc] || q.source_doc || '';
+
+  let optsHtml = '';
+  if (q.options && q.options.length) {
+    optsHtml = '<div class="bank-item-options">';
+    const correctSet = new Set((q.answer || '').split(''));
+    for (const o of q.options) {
+      const isCorrect = correctSet.has(o.key);
+      optsHtml += `<div class="${isCorrect ? 'opt-correct' : ''}">${o.key}. ${escHtml(o.text)} ${isCorrect ? '✓' : ''}</div>`;
+    }
+    optsHtml += '</div>';
+  }
+
+  let ansHtml = '';
+  if (noAns) {
+    ansHtml = '<div class="bank-item-answer empty">⚠ 缺答案</div>';
+  } else {
+    ansHtml = `<div class="bank-item-answer">答案:${escHtml(formatAnswer(q))}</div>`;
+  }
+
+  const explainHtml = q.explanation ? `<div class="bank-item-explain" onclick="this.classList.toggle('expanded')">${escHtml(q.explanation)}</div>` : '';
+  const notesHtml = q.notes ? `<div style="margin-top:6px;padding:6px 10px;background:#fffbf0;border-left:3px solid var(--yellow);font-size:12px;color:#876600;">📝 ${escHtml(q.notes)}</div>` : '';
+  const sourceParaBtn = q.source_para && paragraphMap[q.source_para]
+    ? `<button onclick="jumpToPara('${q.source_para}')">→ 看原文段落</button>` : '';
+
+  return `<div class="bank-item ${noAns ? 'needs-answer' : ''}" id="bank-${q.id}">
+    <div class="bank-item-head">
+      <span class="q-type-badge badge-${q.type}">${typeName}</span>
+      <span class="bank-item-id">${q.id}</span>
+      ${src ? `<span class="src-badge">${escHtml(src)}</span>` : ''}
+      ${q.chapter ? `<span class="src-badge">${escHtml(q.chapter)}</span>` : ''}
+      ${q.is_supplementary ? '<span class="src-badge" style="background:#fef9e7;color:#d68910;">📌 lxh 补充题</span>' : ''}
+      ${q.needs_review ? '<span class="src-badge" style="background:#fef9e7;color:#d68910;">待复查</span>' : ''}
+      ${isEdited ? '<span class="src-badge" style="background:#e8f4fd;color:#2980b9;">我编辑过</span>' : ''}
+    </div>
+    <div class="bank-item-stem">${escHtml(q.stem)}</div>
+    ${optsHtml}
+    ${ansHtml}
+    ${explainHtml}
+    ${notesHtml}
+    <div class="bank-item-actions">
+      <button onclick="editBankItem('${q.id}')">编辑</button>
+      ${sourceParaBtn}
+      ${isEdited ? `<button onclick="revertBankItem('${q.id}')" style="color:#999;">撤销编辑</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function editBankItem(qid) {
+  const q = questionMap[qid];
+  if (!q) return;
+  const item = document.getElementById('bank-' + qid);
+  if (!item) return;
+  // 已经在编辑中?
+  if (item.querySelector('.bank-edit-form')) {
+    item.querySelector('.bank-edit-form').remove();
+    return;
+  }
+
+  const isFill = q.type === 'fill' || q.type === 'multi_fill';
+  const ansLabel = isFill ? '答案文本(填空)' : '答案 key(如 A 或 ABCD)';
+  const ansVal = isFill ? (q.answer_text || '') : (q.answer || '');
+
+  let optsEdit = '';
+  if (q.options && q.options.length) {
+    optsEdit = '<label>选项</label>';
+    for (const o of q.options) {
+      optsEdit += `<div class="form-row" style="align-items:center;margin-bottom:4px;">
+        <div style="flex:0 0 30px;font-weight:bold;">${o.key}.</div>
+        <div><input type="text" data-edit-opt="${o.key}" value="${escHtml(o.text)}"></div>
+      </div>`;
+    }
+  }
+
+  const formHtml = `<div class="bank-edit-form">
+    <label>题干</label>
+    <textarea data-edit-stem rows="2">${escHtml(q.stem)}</textarea>
+    ${optsEdit}
+    <label>${ansLabel}</label>
+    <input type="text" data-edit-answer value="${escHtml(ansVal)}">
+    <label>解析(原文段落)</label>
+    <textarea data-edit-explain rows="3">${escHtml(q.explanation || '')}</textarea>
+    <label>出题人吐槽 / 我的笔记</label>
+    <textarea data-edit-notes rows="2">${escHtml(q.notes || '')}</textarea>
+    <label>关联原文段落 ID(如 jy-01-p003,留空表示无)</label>
+    <input type="text" data-edit-srcpara value="${escHtml(q.source_para || '')}" placeholder="jy-01-p003">
+    <div style="margin-top:12px;display:flex;gap:8px;">
+      <button onclick="saveBankEdit('${qid}', this)" style="background:var(--red);color:white;border:none;padding:6px 16px;border-radius:3px;cursor:pointer;">保存</button>
+      <button onclick="this.closest('.bank-edit-form').remove()" style="padding:6px 16px;border:1px solid #ddd;border-radius:3px;cursor:pointer;background:white;">取消</button>
+    </div>
+  </div>`;
+  item.insertAdjacentHTML('beforeend', formHtml);
+}
+
+function saveBankEdit(qid, btn) {
+  const q = questionMap[qid];
+  const form = btn.closest('.bank-edit-form');
+  const stem = form.querySelector('[data-edit-stem]').value.trim();
+  const ansInput = form.querySelector('[data-edit-answer]').value.trim();
+  const explain = form.querySelector('[data-edit-explain]').value.trim();
+  const notes = form.querySelector('[data-edit-notes]').value.trim();
+  const srcpara = form.querySelector('[data-edit-srcpara]').value.trim();
+
+  // 选项编辑
+  const newOpts = [];
+  form.querySelectorAll('[data-edit-opt]').forEach(inp => {
+    newOpts.push({ key: inp.dataset.editOpt, text: inp.value });
+  });
+
+  const isFill = q.type === 'fill' || q.type === 'multi_fill';
+  const patch = {
+    stem,
+    explanation: explain,
+    notes,
+    source_para: srcpara || ''
+  };
+  if (newOpts.length) patch.options = newOpts;
+  if (isFill) {
+    patch.answer_text = ansInput;
+  } else {
+    // 多选答案规范化:大写、去重、按字母排序
+    const ans = ansInput.toUpperCase().split('').filter(c => /[A-Z]/.test(c));
+    const uniq = Array.from(new Set(ans)).sort();
+    patch.answer = uniq.join('');
+  }
+
+  // 应用到 questionMap
+  Object.assign(q, patch);
+  // 写入 edits
+  const edits = getLS(LS.edits, {});
+  edits[qid] = Object.assign(edits[qid] || {}, patch);
+  setLS(LS.edits, edits);
+
+  // 重建 paraToQs (因为 source_para 可能变了)
+  rebuildParaToQs();
+
+  renderBank();
+  renderHeaderStats();
+  showSettingsStatus(`已保存:${qid}(本地)。点击"上传题库到 GitHub"以同步`, 'green');
+}
+
+function revertBankItem(qid) {
+  if (!confirm(`确定撤销 ${qid} 的所有本地编辑?将恢复为 questions.json 中的原版。`)) return;
+  const edits = getLS(LS.edits, {});
+  delete edits[qid];
+  setLS(LS.edits, edits);
+  // 把题目恢复成原始版本
+  if (ORIGINAL_Q[qid]) {
+    // 清空当前对象的所有属性
+    for (const k in questionMap[qid]) delete questionMap[qid][k];
+    Object.assign(questionMap[qid], JSON.parse(JSON.stringify(ORIGINAL_Q[qid])));
+  }
+  rebuildParaToQs();
+  renderBank();
+  renderHeaderStats();
+  showSettingsStatus(`已撤销 ${qid} 的本地编辑`, 'green');
+}
+
+function rebuildParaToQs() {
+  paraToQs = {};
+  for (const q of QUESTIONS.questions) {
+    if (q.source_para) {
+      if (!paraToQs[q.source_para]) paraToQs[q.source_para] = [];
+      paraToQs[q.source_para].push(q.id);
+    }
+  }
+}
+
+// ============== 错题本 ==============
+function renderWrongList() {
+  const list = document.getElementById('wrong-list');
+  const wrong = getLS(LS.wrong, []);
+  document.getElementById('wrong-stats').textContent = `共 ${wrong.length} 道错题`;
+
+  if (!wrong.length) {
+    list.innerHTML = '<div class="empty-hint">还没有错题<br>模拟考试时答错的题会自动收集到这里</div>';
+    return;
+  }
+
+  let html = '';
+  // 倒序:最近的错题在前
+  for (let i = wrong.length - 1; i >= 0; i--) {
+    const w = wrong[i];
+    const q = questionMap[w.qid];
+    if (!q) continue;
+    const typeName = { single: '单选', multi: '多选', judge: '判断', fill: '填空', multi_fill: '组合填空' }[q.type] || q.type;
+    const correctAns = formatAnswer(q);
+    const userAnsDisplay = formatUserAns(q, w.userAns);
+    const time = new Date(w.time).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const sourceParaBtn = q.source_para && paragraphMap[q.source_para]
+      ? `<button onclick="jumpToPara('${q.source_para}')">→ 看原文段落</button>` : '';
+
+    html += `<div class="wrong-item">
+      <div class="wrong-item-head">
+        <span class="q-type-badge badge-${q.type}">${typeName}</span>
+        <span style="font-family:monospace;color:#aaa;">${q.id}</span>
+        <span style="color:#bbb;">${time}</span>
+      </div>
+      <div class="wrong-item-stem">${escHtml(q.stem)}</div>
+      <div class="wrong-item-meta">
+        <span class="your-ans">你的答案:${escHtml(userAnsDisplay) || '(空)'}</span>
+        <span class="correct-ans">正确答案:${escHtml(correctAns) || '(无)'}</span>
+      </div>
+      <div class="wrong-item-actions">
+        ${sourceParaBtn}
+        <button onclick="removeWrong(${i})">移出错题本</button>
+      </div>
+    </div>`;
+  }
+  list.innerHTML = html;
+}
+
+function formatUserAns(q, userAns) {
+  if (q.type === 'judge') {
+    if (userAns === 'A') return '正确';
+    if (userAns === 'B') return '错误';
+  }
+  if (Array.isArray(userAns)) return userAns.join('');
+  return userAns || '';
+}
+
+function removeWrong(idx) {
+  const wrong = getLS(LS.wrong, []);
+  wrong.splice(idx, 1);
+  setLS(LS.wrong, wrong);
+  renderWrongList();
+  updateWrongBadge();
+  renderHeaderStats();
+}
+
+function clearWrong() {
+  if (!confirm('确定清空错题本?')) return;
+  setLS(LS.wrong, []);
+  renderWrongList();
+  updateWrongBadge();
+  renderHeaderStats();
+}
+
+function exportWrong() {
+  const wrong = getLS(LS.wrong, []);
+  if (!wrong.length) { alert('错题本为空'); return; }
+  const lines = ['# 错题本导出\n', `共 ${wrong.length} 题\n\n`];
+  for (let i = wrong.length - 1; i >= 0; i--) {
+    const w = wrong[i];
+    const q = questionMap[w.qid];
+    if (!q) continue;
+    lines.push(`## ${i+1}. [${q.id}] ${q.stem}\n`);
+    if (q.options && q.options.length) {
+      for (const o of q.options) lines.push(`- ${o.key}. ${o.text}\n`);
+    }
+    lines.push(`\n- 你的答案: ${formatUserAns(q, w.userAns)}\n`);
+    lines.push(`- 正确答案: ${formatAnswer(q)}\n`);
+    if (q.explanation) lines.push(`- 解析: ${q.explanation.slice(0,200)}\n`);
+    lines.push('\n');
+  }
+  const blob = new Blob([lines.join('')], { type: 'text/markdown;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '错题本_' + new Date().toISOString().slice(0,10) + '.md';
+  a.click();
+}
+
+function addWrong(qid, userAns) {
+  const wrong = getLS(LS.wrong, []);
+  // 如果已经在错题本里, 移除旧的, 加新的(更新时间)
+  const idx = wrong.findIndex(w => w.qid === qid);
+  if (idx >= 0) wrong.splice(idx, 1);
+  wrong.push({ qid, userAns, time: Date.now() });
+  setLS(LS.wrong, wrong);
+}
+
+function updateWrongBadge() {
+  const wrong = getLS(LS.wrong, []);
+  const badge = document.getElementById('wrong-badge');
+  if (wrong.length > 0) {
+    badge.textContent = wrong.length;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+</script>
+<script>
+// ============== 模拟考试 ==============
+let examState = null;
+let examTimerHandle = null;
+
+function selectCount(btn, n) {
+  document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  btn.dataset.selected = '1';
+  document.querySelectorAll('.count-btn').forEach(b => { if (b !== btn) delete b.dataset.selected; });
+}
+
+function startExam() {
+  const countBtn = document.querySelector('.count-btn.active');
+  const count = parseInt(countBtn ? countBtn.dataset.count : '40', 10);
+
+  const types = [];
+  if (document.getElementById('chk-single').checked) types.push('single');
+  if (document.getElementById('chk-multi').checked) types.push('multi');
+  if (document.getElementById('chk-judge').checked) types.push('judge');
+  if (document.getElementById('chk-fill').checked) types.push('fill');
+  if (document.getElementById('chk-multi_fill').checked) types.push('multi_fill');
+  if (!types.length) { alert('请至少选择一种题型'); return; }
+
+  const sources = [];
+  if (document.getElementById('src-sxy').checked) sources.push('sxy');
+  if (document.getElementById('src-lxh').checked) sources.push('lxh党课题库');
+  if (document.getElementById('src-sd').checked) sources.push('二十大相关题库');
+  if (!sources.length) { alert('请至少选择一个题库来源'); return; }
+
+  const skipNoAns = document.getElementById('opt-skip-noanswer').checked;
+  const onlyWrong = document.getElementById('opt-only-wrong').checked;
+
+  let pool = QUESTIONS.questions.filter(q => {
+    if (!types.includes(q.type)) return false;
+    if (!sources.includes(q.source_doc)) return false;
+    if (skipNoAns && !hasAnswer(q)) return false;
+    return true;
+  });
+
+  if (onlyWrong) {
+    const wrongIds = new Set(getLS(LS.wrong, []).map(w => w.qid));
+    pool = pool.filter(q => wrongIds.has(q.id));
+    if (!pool.length) { alert('错题本里没有满足条件的题'); return; }
+  }
+
+  if (!pool.length) { alert('当前条件下没有可用题目'); return; }
+
+  // 洗牌
+  shuffle(pool);
+  const target = count === 0 ? pool : pool.slice(0, count);
+
+  examState = {
+    questions: target,
+    answers: {}, // qid -> user answer
+    startTime: Date.now()
+  };
+
+  document.getElementById('exam-setup-view').style.display = 'none';
+  document.getElementById('exam-result-view').style.display = 'none';
+  document.getElementById('exam-area-view').style.display = 'flex';
+  renderExamQuestions();
+  startExamTimer();
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+function startExamTimer() {
+  clearInterval(examTimerHandle);
+  examTimerHandle = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - examState.startTime) / 1000);
+    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('exam-timer').textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+function renderExamQuestions() {
+  const box = document.getElementById('exam-questions');
+  let html = '';
+  examState.questions.forEach((q, i) => {
+    html += renderExamQuestion(q, i);
+  });
+  box.innerHTML = html;
+  updateExamProgress();
+}
+
+function renderExamQuestion(q, idx) {
+  const typeName = { single: '单选', multi: '多选', judge: '判断', fill: '填空', multi_fill: '组合填空' }[q.type];
+  let body = '';
+
+  if (q.type === 'single') {
+    body = '<div class="exam-options">';
+    for (const o of q.options) {
+      body += `<label class="exam-option" data-key="${o.key}">
+        <input type="radio" name="q-${idx}" value="${o.key}" onchange="recordAns(${idx}, '${q.id}', this.value)">
+        <span><b>${o.key}.</b> ${escHtml(o.text)}</span>
+      </label>`;
+    }
+    body += '</div>';
+  } else if (q.type === 'multi') {
+    body = '<div class="exam-options">';
+    for (const o of q.options) {
+      body += `<label class="exam-option" data-key="${o.key}">
+        <input type="checkbox" name="q-${idx}" value="${o.key}" onchange="recordMultiAns(${idx}, '${q.id}')">
+        <span><b>${o.key}.</b> ${escHtml(o.text)}</span>
+      </label>`;
+    }
+    body += '</div>';
+  } else if (q.type === 'judge') {
+    body = `<div class="judge-btns">
+      <button class="judge-btn" data-key="A" onclick="recordJudge(${idx}, '${q.id}', 'A', this)">✓ 正确</button>
+      <button class="judge-btn" data-key="B" onclick="recordJudge(${idx}, '${q.id}', 'B', this)">✗ 错误</button>
+    </div>`;
+  } else if (q.type === 'fill') {
+    body = `<input type="text" class="fill-input" placeholder="请填写答案" oninput="recordAns(${idx}, '${q.id}', this.value)">
+      <div class="fill-hint">提示:答题宽松匹配,空格 / 标点 / 全角不影响</div>`;
+  } else if (q.type === 'multi_fill') {
+    // 组合填空,数空数
+    const blanks = (q.stem.match(/____/g) || ['_']).length;
+    let inputs = '';
+    for (let i = 0; i < blanks; i++) {
+      inputs += `<input type="text" class="fill-input" placeholder="第 ${i+1} 空" data-blank="${i}" oninput="recordMultiFill(${idx}, '${q.id}')" style="margin-bottom:5px;">`;
+    }
+    body = `<div>${inputs}<div class="fill-hint">提示:多空请按顺序填写,用分号分隔的标准答案会拆开匹配</div></div>`;
+  }
+
+  return `<div class="exam-q" data-idx="${idx}">
+    <div class="exam-q-header">
+      <span class="exam-q-num">${idx + 1}.</span>
+      <span class="q-type-badge badge-${q.type}">${typeName}</span>
+      <span class="exam-q-stem">${escHtml(q.stem)}</span>
+    </div>
+    ${body}
+  </div>`;
+}
+
+function recordAns(idx, qid, val) {
+  examState.answers[qid] = val;
+  // 视觉反馈:单选高亮
+  const qBox = document.querySelector(`.exam-q[data-idx="${idx}"]`);
+  if (qBox) {
+    qBox.querySelectorAll('.exam-option').forEach(opt => {
+      opt.classList.toggle('selected', opt.dataset.key === val);
+    });
+  }
+  updateExamProgress();
+}
+
+function recordMultiAns(idx, qid) {
+  const qBox = document.querySelector(`.exam-q[data-idx="${idx}"]`);
+  const checked = Array.from(qBox.querySelectorAll('input[type=checkbox]:checked')).map(c => c.value).sort();
+  examState.answers[qid] = checked.join('');
+  qBox.querySelectorAll('.exam-option').forEach(opt => {
+    opt.classList.toggle('selected', checked.includes(opt.dataset.key));
+  });
+  updateExamProgress();
+}
+
+function recordJudge(idx, qid, val, btn) {
+  examState.answers[qid] = val;
+  const qBox = document.querySelector(`.exam-q[data-idx="${idx}"]`);
+  qBox.querySelectorAll('.judge-btn').forEach(b => b.classList.toggle('selected', b === btn));
+  updateExamProgress();
+}
+
+function recordMultiFill(idx, qid) {
+  const qBox = document.querySelector(`.exam-q[data-idx="${idx}"]`);
+  const vals = Array.from(qBox.querySelectorAll('[data-blank]')).map(i => i.value.trim());
+  examState.answers[qid] = vals;
+  updateExamProgress();
+}
+
+function updateExamProgress() {
+  const total = examState.questions.length;
+  const done = Object.keys(examState.answers).filter(qid => {
+    const a = examState.answers[qid];
+    if (Array.isArray(a)) return a.some(x => x);
+    return a !== undefined && a !== '';
+  }).length;
+  document.getElementById('exam-progress-fill').style.width = (done / total * 100) + '%';
+  document.getElementById('exam-progress-text').textContent = `已答 ${done} / ${total} 题`;
+}
+
+function submitExam() {
+  const total = examState.questions.length;
+  const done = Object.keys(examState.answers).filter(qid => {
+    const a = examState.answers[qid];
+    if (Array.isArray(a)) return a.some(x => x);
+    return a !== undefined && a !== '';
+  }).length;
+  if (done < total) {
+    if (!confirm(`还有 ${total - done} 题未答,确定交卷?`)) return;
+  }
+  clearInterval(examTimerHandle);
+  showResult();
+}
+
+function showResult() {
+  let correct = 0, wrong = 0, partial = 0, skipped = 0, noJudge = 0;
+  const reviewItems = [];
+  const stats = getLS(LS.qStats, {});
+
+  for (const q of examState.questions) {
+    const userAns = examState.answers[q.id];
+    const isAnswered = userAns !== undefined && (Array.isArray(userAns) ? userAns.some(x => x) : userAns !== '');
+    if (!isAnswered) {
+      skipped++;
+      reviewItems.push({ q, userAns: '', verdict: 'skipped' });
+      continue;
+    }
+
+    if (!hasAnswer(q)) {
+      noJudge++;
+      reviewItems.push({ q, userAns, verdict: 'no_judge' });
+      continue;
+    }
+
+    const verdict = judgeAnswer(q, userAns);
+    if (verdict === 'correct') correct++;
+    else if (verdict === 'partial') partial++;
+    else wrong++;
+
+    reviewItems.push({ q, userAns, verdict });
+
+    // 统计
+    stats[q.id] = stats[q.id] || { answered: 0, correct: 0 };
+    stats[q.id].answered++;
+    if (verdict === 'correct') stats[q.id].correct++;
+
+    // 错题本
+    if (verdict === 'wrong' || verdict === 'partial') {
+      addWrong(q.id, userAns);
+    }
+  }
+
+  setLS(LS.qStats, stats);
+  updateWrongBadge();
+  renderHeaderStats();
+
+  const total = examState.questions.length;
+  const judged = total - skipped - noJudge;
+  const score = judged > 0 ? Math.round((correct + partial * 0.5) / judged * 100) : 0;
+  const elapsed = Math.floor((Date.now() - examState.startTime) / 1000);
+  const elapsedStr = `${Math.floor(elapsed / 60)}分${elapsed % 60}秒`;
+
+  let html = `<div class="result-score-card">
+    <div class="result-score ${score >= 60 ? 'pass' : ''}">${score}</div>
+    <div class="result-label">${judged > 0 ? `折合百分制 · 共 ${judged} 题计分` : '本卷无可计分题目'}</div>
+    <div class="result-stats">
+      <span style="color:var(--green);">✓ 正确 ${correct}</span>
+      ${partial > 0 ? `<span style="color:var(--yellow);">◐ 半对 ${partial}</span>` : ''}
+      <span style="color:var(--red);">✗ 错 ${wrong}</span>
+      ${skipped > 0 ? `<span style="color:#999;">— 跳过 ${skipped}</span>` : ''}
+      ${noJudge > 0 ? `<span style="color:#999;">? 无答案 ${noJudge}</span>` : ''}
+      <span style="color:#999;">⏱ ${elapsedStr}</span>
+    </div>
+  </div>`;
+
+  html += '<div class="result-section"><h3>答题详情</h3>';
+  reviewItems.forEach((it, i) => {
+    html += renderReviewItem(it, i + 1);
+  });
+  html += '</div>';
+  html += '<button class="result-back-btn" onclick="backToExamSetup()">返回考试设置</button>';
+
+  document.getElementById('exam-area-view').style.display = 'none';
+  document.getElementById('exam-result-view').style.display = 'block';
+  document.getElementById('result-area').innerHTML = html;
+}
+
+function judgeAnswer(q, userAns) {
+  if (q.type === 'fill') {
+    const std = (q.answer_text || '').trim();
+    const u = String(userAns || '').trim();
+    if (!std) return 'no_judge';
+    return normalizeText(u) === normalizeText(std) ? 'correct' : 'wrong';
+  }
+  if (q.type === 'multi_fill') {
+    const stdParts = (q.answer_text || '').split(/[；;]/).map(s => s.trim()).filter(Boolean);
+    const userParts = Array.isArray(userAns) ? userAns.map(s => s.trim()) : [];
+    if (!stdParts.length) return 'no_judge';
+    let hit = 0;
+    for (let i = 0; i < stdParts.length; i++) {
+      if (userParts[i] && normalizeText(userParts[i]) === normalizeText(stdParts[i])) hit++;
+    }
+    if (hit === stdParts.length) return 'correct';
+    if (hit > 0) return 'partial';
+    return 'wrong';
+  }
+  // single / judge / multi
+  const std = (q.answer || '').toUpperCase();
+  const u = String(userAns || '').toUpperCase();
+  if (q.type === 'multi') {
+    const sortedStd = std.split('').sort().join('');
+    const sortedU = u.split('').sort().join('');
+    if (sortedStd === sortedU) return 'correct';
+    // 部分对(选了正确选项的子集且没多选)= partial
+    const stdSet = new Set(std);
+    const uSet = new Set(u);
+    let allSubset = true, atLeastOne = false;
+    for (const c of uSet) { if (!stdSet.has(c)) allSubset = false; }
+    for (const c of uSet) { if (stdSet.has(c)) atLeastOne = true; }
+    if (allSubset && atLeastOne && uSet.size < stdSet.size) return 'partial';
+    return 'wrong';
+  }
+  return std === u ? 'correct' : 'wrong';
+}
+
+function normalizeText(s) {
+  return String(s)
+    .replace(/\s+/g, '')
+    .replace(/[，。、；：！？""''（）【】《》]/g, '')
+    .replace(/[,.;:!?"'()]/g, '')
+    .toLowerCase();
+}
+
+function renderReviewItem(it, num) {
+  const q = it.q;
+  const v = it.verdict;
+  const cls = (v === 'correct') ? 'correct' : (v === 'partial' ? 'partial' : 'wrong');
+  const correctAns = formatAnswer(q);
+  const userAnsStr = formatUserAns(q, it.userAns);
+  let verdictText;
+  if (v === 'correct') verdictText = '<span style="color:var(--green);">✓ 答对</span>';
+  else if (v === 'partial') verdictText = '<span style="color:var(--yellow);">◐ 部分对</span>';
+  else if (v === 'skipped') verdictText = '<span style="color:#999;">— 未答</span>';
+  else if (v === 'no_judge') verdictText = '<span style="color:#999;">? 此题无标准答案</span>';
+  else verdictText = '<span style="color:var(--red);">✗ 答错</span>';
+
+  const sourceParaBtn = q.source_para && paragraphMap[q.source_para]
+    ? `<button onclick="jumpToPara('${q.source_para}')">→ 看原文</button>` : '';
+  const explainBtn = q.explanation ? `<button onclick="alert(${JSON.stringify(q.explanation).replace(/"/g, '&quot;')})">看解析</button>` : '';
+
+  return `<div class="review-q ${cls}">
+    <div class="review-q-stem"><b>${num}.</b> ${escHtml(q.stem)}</div>
+    <div class="review-q-meta">
+      ${verdictText}
+      ${v !== 'correct' && v !== 'no_judge' ? `<span class="your-ans wrong">你:${escHtml(userAnsStr) || '(空)'}</span>` : ''}
+      ${v !== 'no_judge' ? `<span class="your-ans right">正确:${escHtml(correctAns)}</span>` : ''}
+    </div>
+    <div class="review-actions">${sourceParaBtn} ${explainBtn}</div>
+  </div>`;
+}
+
+function backToExamSetup() {
+  examState = null;
+  clearInterval(examTimerHandle);
+  document.getElementById('exam-result-view').style.display = 'none';
+  document.getElementById('exam-area-view').style.display = 'none';
+  document.getElementById('exam-setup-view').style.display = 'block';
+  renderWrongList();
+}
+
+// ============== 设置 / GitHub 同步 ==============
+function loadGhSettings() {
+  document.getElementById('gh-token').value = getLS(LS.ghToken, '') || '';
+  document.getElementById('gh-repo').value = getLS(LS.ghRepo, '') || '';
+  document.getElementById('gh-path-q').value = getLS(LS.ghPathQ, 'questions.json') || 'questions.json';
+}
+
+function saveGhSettings() {
+  setLS(LS.ghToken, document.getElementById('gh-token').value.trim());
+  setLS(LS.ghRepo, document.getElementById('gh-repo').value.trim());
+  setLS(LS.ghPathQ, document.getElementById('gh-path-q').value.trim() || 'questions.json');
+  showSettingsStatus('设置已保存', 'green');
+}
+
+function showSettingsStatus(msg, color) {
+  const el = document.getElementById('settings-status');
+  el.textContent = msg;
+  el.className = 'settings-status show' + (color === 'red' ? ' error' : '');
+  setTimeout(() => { el.classList.remove('show'); }, 4000);
+}
+
+async function uploadQuestionsToGitHub() {
+  const token = (getLS(LS.ghToken, '') || '').trim();
+  const repo = (getLS(LS.ghRepo, '') || '').trim();
+  const path = (getLS(LS.ghPathQ, 'questions.json') || 'questions.json').trim();
+
+  if (!token || !repo) { showSettingsStatus('请先填写 token 和 repo 并保存', 'red'); return; }
+  if (!confirm(`即将把当前题库(包含本地编辑)上传覆盖 ${repo}/${path},确认?`)) return;
+
+  const edits = getLS(LS.edits, {});
+  if (Object.keys(edits).length === 0) {
+    if (!confirm('本地没有任何编辑,仍然上传?')) return;
+  }
+
+  // 构造合并后的 questions.json
+  const merged = JSON.parse(JSON.stringify(QUESTIONS));
+  // 已经在 questionMap 上 mutate 过, 直接用 mutate 后的版本
+  // 更稳妥:把 edits 应用到 merged 上
+  for (const q of merged.questions) {
+    if (edits[q.id]) Object.assign(q, edits[q.id]);
+  }
+  merged.meta = merged.meta || {};
+  merged.meta.last_local_sync = new Date().toISOString();
+
+  const content = JSON.stringify(merged, null, 2);
+
+  try {
+    showSettingsStatus('上传中...', 'green');
+    // 1. 获取当前 sha
+    let sha = null;
+    const getRes = await fetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(path)}`, {
+      headers: { Authorization: 'token ' + token, Accept: 'application/vnd.github+json' }
+    });
+    if (getRes.ok) {
+      const data = await getRes.json();
+      sha = data.sha;
+    } else if (getRes.status !== 404) {
+      throw new Error('获取文件失败:' + getRes.status + ' ' + (await getRes.text()).slice(0,200));
+    }
+
+    // 2. PUT
+    const editCount = Object.keys(edits).length;
+    const putBody = {
+      message: `Update ${path}: ${editCount} local edits @ ${new Date().toISOString().slice(0,16)}`,
+      content: btoa(unescape(encodeURIComponent(content))),
+      sha: sha || undefined
+    };
+    const putRes = await fetch(`https://api.github.com/repos/${repo}/contents/${encodeURIComponent(path)}`, {
+      method: 'PUT',
+      headers: { Authorization: 'token ' + token, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(putBody)
+    });
+    if (!putRes.ok) {
+      throw new Error('上传失败:' + putRes.status + ' ' + (await putRes.text()).slice(0,200));
+    }
+    showSettingsStatus(`✓ 已上传 ${editCount} 处编辑到 ${repo}/${path}`, 'green');
+  } catch (e) {
+    showSettingsStatus('上传失败:' + e.message, 'red');
+  }
+}
+
+// ============== 本地数据导出/导入 ==============
+function exportLocalData() {
+  const data = {
+    edits: getLS(LS.edits, {}),
+    qStats: getLS(LS.qStats, {}),
+    wrong: getLS(LS.wrong, []),
+    annotations: getLS(LS.annotations, {}),
+    exportTime: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '初党备考_本地数据_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+function importLocalData() {
+  document.getElementById('import-file').click();
+}
+
+function handleImportFile(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!confirm('导入会覆盖当前的所有本地数据(编辑/批注/错题/统计),继续?')) return;
+      if (data.edits) setLS(LS.edits, data.edits);
+      if (data.qStats) setLS(LS.qStats, data.qStats);
+      if (data.wrong) setLS(LS.wrong, data.wrong);
+      if (data.annotations) setLS(LS.annotations, data.annotations);
+      alert('导入成功,即将刷新');
+      location.reload();
+    } catch (err) {
+      alert('导入失败:' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function clearLocalData() {
+  if (!confirm('确定清空所有本地数据?(编辑、批注、错题、做题统计全部删除,GitHub 设置保留)\n建议先导出备份。')) return;
+  if (!confirm('再次确认,这个操作不可撤销。')) return;
+  localStorage.removeItem(LS.edits);
+  localStorage.removeItem(LS.qStats);
+  localStorage.removeItem(LS.wrong);
+  localStorage.removeItem(LS.annotations);
+  alert('已清空,即将刷新');
+  location.reload();
+}
+
+// ============== 启动 ==============
+init();
+</script>
+</body>
+</html>
